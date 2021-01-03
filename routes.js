@@ -130,6 +130,7 @@ router.put('/courses/:id', authenticateUser, asyncHandler(async (req, res) => {
           res.sendStatus(204);
         }
         else{
+          //user doesn't own course, send error
           let error = new Error();
           error.message = `Can't update course if you aren't the owner`;
           error.status = 403;
@@ -141,7 +142,6 @@ router.put('/courses/:id', authenticateUser, asyncHandler(async (req, res) => {
       }
     } catch (error){
       if(error.name === "SequelizeValidationError") {        
-        //course.id = req.params.id;
         //render the course detail page with errors and details entered
         const errors = error.errors.map(err => err.message);
         res.status(400).json({ errors });  
@@ -166,6 +166,7 @@ router.delete('/courses/:id', authenticateUser, asyncHandler(async (req, res) =>
           res.sendStatus(204);
         }
         else{
+          //user doesn't own course, send error
           let error = new Error();
           error.message = `Can't delete course if you aren't the owner`;
           error.status = 403;
