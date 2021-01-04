@@ -24,7 +24,8 @@ function asyncHandler(cb) {
 // Route that returns a list of users.
 router.get('/users', authenticateUser, asyncHandler(async (req, res) => {
   try {
-    let users = await User.findAll({attributes: ['id', 'firstName', 'lastName', 'emailAddress']});
+    console.log(`Current User: ${JSON.stringify(req.currentUser)}`);
+    let users = await User.findByPk(req.currentUser.id, {attributes: ['id', 'firstName', 'lastName', 'emailAddress']});
     //return status 200 and list of users
     res.status(200).json(users);
   }catch (error) {
@@ -58,7 +59,14 @@ router.post('/users', asyncHandler(async (req, res) => {
 // Route that returns a list of courses.
 router.get('/courses', asyncHandler(async (req, res) => {
   try{
-    let courses = await Course.findAll({attributes: ['id', 'title', 'description','estimatedTime', 'materialsNeeded', 'userId']});
+    let courses = await Course.findAll({
+      attributes: ['id', 'title', 'description','estimatedTime', 'materialsNeeded', 'userId'], 
+      include: [{
+        model: User,
+        attributes: ['id', 'firstName', 'lastName', 'emailAddress'],
+        as: 'User',
+      }]
+  });
     //set status to 200 and return list of courses
     res.status(200).json(courses);
   }catch (error) {
@@ -76,7 +84,14 @@ router.get('/courses', asyncHandler(async (req, res) => {
 router.get('/courses/:id', asyncHandler(async (req, res) => {
   try{  
     let courseID = req.params.id
-    let courses = await Course.findByPk(courseID, {attributes: ['id', 'title', 'description','estimatedTime', 'materialsNeeded', 'userId']});
+    let courses = await Course.findByPk(courseID, 
+      {attributes: ['id', 'title', 'description','estimatedTime', 'materialsNeeded', 'userId'], 
+        include: [{
+          model: User,
+          attributes: ['id', 'firstName', 'lastName', 'emailAddress'],
+          as: 'User',
+        }]
+      });
     if(courses){
       //if course exists return it
       res.status(200).json(courses);
@@ -125,7 +140,7 @@ router.put('/courses/:id', authenticateUser, asyncHandler(async (req, res) => {
       course = await Course.findByPk(req.params.id);
       if(course){
         //if course exists, update the course with info provided in request body
-        if(req.currentUser.userId == course.userId){
+        if(req.currentUser.id == course.userId){
           await course.update(req.body);
           res.sendStatus(204);
         }
@@ -160,7 +175,7 @@ router.delete('/courses/:id', authenticateUser, asyncHandler(async (req, res) =>
       //get the course by ID
       course = await Course.findByPk(req.params.id);
       if(course){
-        if(req.currentUser.userId == course.userId){
+        if(req.currentUser.id == course.userId){
           //if course exists and user is the owner, delete the course
           await course.destroy();
           res.sendStatus(204);
